@@ -1,0 +1,1145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AMC Brokerage Intelligence</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,700;1,9..144,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink: oklch(18% 0.01 255);
+  --ink2: oklch(38% 0.01 255);
+  --ink3: oklch(55% 0.01 255);
+  --paper: oklch(97% 0.005 255);
+  --paper2: oklch(93% 0.007 255);
+  --paper3: oklch(88% 0.008 255);
+  --rule: oklch(85% 0.008 255);
+  --teal: oklch(58% 0.14 185);
+  --teal-light: oklch(94% 0.04 185);
+  --teal-mid: oklch(75% 0.09 185);
+  --amber: oklch(72% 0.15 75);
+  --amber-light: oklch(95% 0.04 75);
+  --red: oklch(58% 0.18 25);
+  --red-light: oklch(95% 0.04 25);
+  --green: oklch(60% 0.14 155);
+  --green-light: oklch(94% 0.04 155);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  min-height: 100vh;
+}
+
+/* ── Layout ── */
+.shell {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  min-height: 100vh;
+}
+
+/* ── Sidebar ── */
+.sidebar {
+  background: var(--ink);
+  color: var(--paper);
+  padding: 32px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+}
+
+.brand {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.brand-name {
+  font-family: 'Fraunces', serif;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.1;
+  color: oklch(97% 0.005 255);
+}
+
+.brand-name em {
+  font-style: italic;
+  color: var(--teal-mid);
+}
+
+.brand-sub {
+  font-size: 11px;
+  color: oklch(55% 0.01 255);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* Stats in sidebar */
+.sidebar-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sidebar-stat {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 10px 0;
+  border-bottom: 1px solid oklch(28% 0.01 255);
+}
+
+.sidebar-stat:last-child { border-bottom: none; }
+
+.ss-label {
+  font-size: 11px;
+  color: oklch(55% 0.01 255);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.ss-val {
+  font-family: 'Fraunces', serif;
+  font-size: 26px;
+  font-weight: 500;
+  color: var(--teal-mid);
+  line-height: 1;
+}
+
+/* Upload area in sidebar */
+.upload-area {
+  border: 1.5px dashed oklch(35% 0.01 255);
+  border-radius: 12px;
+  padding: 20px 16px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+  position: relative;
+}
+
+.upload-area:hover, .upload-area.over {
+  border-color: var(--teal-mid);
+  background: oklch(22% 0.01 255);
+}
+
+.upload-area input { display: none; }
+
+.upload-icon {
+  font-size: 28px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.upload-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: oklch(85% 0.005 255);
+  margin-bottom: 4px;
+}
+
+.upload-hint {
+  font-size: 11px;
+  color: oklch(50% 0.01 255);
+}
+
+/* Processing list in sidebar */
+.proc-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.proc-item {
+  background: oklch(22% 0.01 255);
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  animation: fadeUp 0.25s ease;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.proc-name {
+  flex: 1;
+  font-size: 11px;
+  color: oklch(75% 0.008 255);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.proc-badge {
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 20px;
+  flex-shrink: 0;
+}
+
+.proc-badge.running { background: oklch(72% 0.15 75 / 0.2); color: var(--amber); }
+.proc-badge.done { background: oklch(60% 0.14 155 / 0.2); color: var(--green); }
+.proc-badge.fail { background: oklch(58% 0.18 25 / 0.2); color: var(--red); }
+
+.spin {
+  width: 12px; height: 12px;
+  border: 1.5px solid oklch(35% 0.01 255);
+  border-top-color: var(--amber);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Sidebar footer */
+.sidebar-footer {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.btn {
+  width: 100%;
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: none;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.btn-teal { background: var(--teal); color: #fff; }
+.btn-teal:hover { background: oklch(52% 0.14 185); }
+.btn-ghost {
+  background: transparent;
+  color: oklch(55% 0.01 255);
+  border: 1px solid oklch(30% 0.01 255);
+}
+.btn-ghost:hover { border-color: oklch(45% 0.01 255); color: oklch(75% 0.008 255); }
+.btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+/* ── Main content ── */
+.main {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* Topbar */
+.topbar {
+  background: oklch(99% 0.003 255);
+  border-bottom: 1px solid var(--rule);
+  padding: 14px 28px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.search-wrap {
+  flex: 1;
+  position: relative;
+  max-width: 360px;
+}
+
+.search-wrap svg {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--ink3);
+}
+
+.search-input {
+  width: 100%;
+  padding: 9px 12px 9px 36px;
+  background: var(--paper2);
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  color: var(--ink);
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.search-input:focus { border-color: var(--teal); }
+.search-input::placeholder { color: var(--ink3); }
+
+.filter-select {
+  padding: 9px 12px;
+  background: var(--paper2);
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  color: var(--ink);
+  outline: none;
+  cursor: pointer;
+  min-width: 150px;
+}
+
+.topbar-count {
+  font-size: 12px;
+  color: var(--ink3);
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+/* Compare bar */
+.compare-bar {
+  background: var(--teal-light);
+  border-bottom: 1px solid var(--teal-mid);
+  padding: 10px 28px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+  color: oklch(35% 0.1 185);
+}
+
+.compare-bar.hidden { display: none; }
+
+.compare-bar strong { font-weight: 600; }
+
+.btn-sm {
+  padding: 6px 14px;
+  border-radius: 6px;
+  border: none;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-sm-teal { background: var(--teal); color: #fff; }
+.btn-sm-teal:hover { background: oklch(52% 0.14 185); }
+.btn-sm-ghost {
+  background: transparent;
+  color: oklch(45% 0.1 185);
+  border: 1px solid var(--teal-mid);
+}
+.btn-sm-ghost:hover { background: oklch(88% 0.06 185); }
+.btn-sm:disabled { opacity: 0.35; cursor: not-allowed; }
+
+/* Table area */
+.table-wrap {
+  flex: 1;
+  overflow-x: auto;
+  padding: 0 28px 40px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+}
+
+thead th {
+  text-align: left;
+  padding: 10px 14px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink3);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border-bottom: 2px solid var(--rule);
+  cursor: pointer;
+  white-space: nowrap;
+  user-select: none;
+}
+
+thead th:hover { color: var(--teal); }
+thead th:first-child { cursor: default; width: 36px; }
+
+tbody tr {
+  border-bottom: 1px solid var(--rule);
+  transition: background 0.1s;
+}
+
+tbody tr:hover { background: oklch(95% 0.006 255); }
+
+tbody td {
+  padding: 12px 14px;
+  vertical-align: middle;
+}
+
+.td-scheme {
+  font-weight: 500;
+  color: var(--ink);
+  max-width: 280px;
+}
+
+.tag {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.tag-amc { background: var(--paper2); color: var(--ink2); border: 1px solid var(--rule); }
+
+.tag-cat { background: var(--teal-light); color: oklch(40% 0.12 185); }
+.tag-cat.equity { background: oklch(94% 0.04 270); color: oklch(40% 0.12 270); }
+.tag-cat.debt { background: oklch(94% 0.04 75); color: oklch(40% 0.12 75); }
+.tag-cat.hybrid { background: oklch(94% 0.04 320); color: oklch(40% 0.12 320); }
+.tag-cat.liquid { background: oklch(94% 0.04 155); color: oklch(40% 0.12 155); }
+
+.rate-val {
+  font-family: 'Fraunces', serif;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--teal);
+}
+
+.rate-val.secondary { color: oklch(55% 0.1 270); font-size: 14px; }
+.rate-val.dash { color: var(--ink3); font-size: 13px; font-family: 'DM Sans', sans-serif; }
+
+.date-val { font-size: 12px; color: var(--ink3); }
+
+/* Empty state */
+.empty-state {
+  padding: 80px 20px;
+  text-align: center;
+}
+
+.empty-icon { font-size: 48px; margin-bottom: 16px; }
+
+.empty-title {
+  font-family: 'Fraunces', serif;
+  font-size: 22px;
+  font-weight: 500;
+  color: var(--ink2);
+  margin-bottom: 8px;
+}
+
+.empty-sub { font-size: 13px; color: var(--ink3); }
+
+/* ── Compare Modal ── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: oklch(18% 0.01 255 / 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 24px;
+  backdrop-filter: blur(4px);
+}
+
+.modal-overlay.hidden { display: none; }
+
+.modal {
+  background: var(--paper);
+  border-radius: 16px;
+  width: 100%;
+  max-width: 700px;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: 0 24px 60px oklch(10% 0.01 255 / 0.25);
+}
+
+.modal-head {
+  padding: 24px 28px 16px;
+  border-bottom: 1px solid var(--rule);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.modal-title {
+  font-family: 'Fraunces', serif;
+  font-size: 20px;
+  font-weight: 500;
+}
+
+.modal-close {
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  border: 1px solid var(--rule);
+  background: transparent;
+  cursor: pointer;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink3);
+  transition: all 0.15s;
+}
+
+.modal-close:hover { background: var(--paper2); color: var(--ink); }
+
+.modal-body { padding: 20px 28px 28px; }
+
+.compare-item {
+  display: grid;
+  grid-template-columns: 1fr auto auto auto;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.compare-item:last-child { border-bottom: none; }
+.compare-item.top { background: var(--teal-light); margin: 0 -28px; padding: 16px 28px; border-radius: 8px; }
+
+.ci-name {
+  font-weight: 500;
+  font-size: 14px;
+  color: var(--ink);
+}
+
+.ci-meta { font-size: 12px; color: var(--ink3); margin-top: 2px; }
+
+.ci-rate {
+  font-family: 'Fraunces', serif;
+  font-size: 28px;
+  font-weight: 500;
+  color: var(--teal);
+  text-align: right;
+}
+
+.ci-rate span { font-size: 14px; color: var(--ink3); font-family: 'DM Sans', sans-serif; }
+
+/* Notification */
+.notif {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: var(--ink);
+  color: oklch(90% 0.005 255);
+  padding: 12px 20px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  z-index: 200;
+  animation: notifIn 0.25s ease, notifOut 0.25s ease 2.8s forwards;
+  box-shadow: 0 8px 24px oklch(10% 0.01 255 / 0.2);
+}
+
+@keyframes notifIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes notifOut {
+  to { opacity: 0; transform: translateY(12px); }
+}
+
+/* API Key Modal */
+.apikey-overlay {
+  position: fixed;
+  inset: 0;
+  background: oklch(18% 0.01 255 / 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 300;
+  backdrop-filter: blur(6px);
+}
+.apikey-overlay.hidden { display: none; }
+.apikey-box {
+  background: var(--paper);
+  border-radius: 16px;
+  padding: 36px 32px 28px;
+  width: 100%;
+  max-width: 440px;
+  box-shadow: 0 24px 60px oklch(10% 0.01 255 / 0.3);
+}
+.apikey-title {
+  font-family: 'Fraunces', serif;
+  font-size: 22px;
+  font-weight: 500;
+  margin-bottom: 6px;
+}
+.apikey-sub {
+  font-size: 13px;
+  color: var(--ink3);
+  margin-bottom: 24px;
+  line-height: 1.5;
+}
+.apikey-input {
+  width: 100%;
+  padding: 11px 14px;
+  border: 1.5px solid var(--rule);
+  border-radius: 8px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  color: var(--ink);
+  outline: none;
+  margin-bottom: 12px;
+  transition: border-color 0.15s;
+  background: var(--paper2);
+}
+.apikey-input:focus { border-color: var(--teal); }
+.apikey-note {
+  font-size: 11px;
+  color: var(--ink3);
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
+.apikey-note a { color: var(--teal); text-decoration: none; }
+.apikey-err { font-size: 12px; color: var(--red); margin-bottom: 10px; display: none; }
+
+/* Key badge in sidebar */
+.key-badge {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: oklch(22% 0.01 255);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 11px;
+  color: oklch(55% 0.01 255);
+  margin-top: -16px;
+}
+.key-badge span { color: var(--green); font-weight: 500; }
+.key-change {
+  font-size: 10px;
+  color: oklch(45% 0.01 255);
+  cursor: pointer;
+  text-decoration: underline;
+  background: none;
+  border: none;
+  font-family: 'DM Sans', sans-serif;
+  padding: 0;
+}
+.key-change:hover { color: oklch(65% 0.01 255); }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--paper3); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<div class="shell">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-name">AMC <em>Brokerage</em><br>Intelligence</div>
+      <div class="brand-sub">Mutual Fund Tool</div>
+    </div>
+
+    <div class="sidebar-stats">
+      <div class="sidebar-stat">
+        <span class="ss-label">Schemes</span>
+        <span class="ss-val" id="statSchemes">0</span>
+      </div>
+      <div class="sidebar-stat">
+        <span class="ss-label">AMCs</span>
+        <span class="ss-val" id="statAMCs">0</span>
+      </div>
+      <div class="sidebar-stat">
+        <span class="ss-label">Avg Trail Yr1</span>
+        <span class="ss-val" id="statAvg">—</span>
+      </div>
+      <div class="sidebar-stat">
+        <span class="ss-label">PDFs Loaded</span>
+        <span class="ss-val" id="statPDFs">0</span>
+      </div>
+    </div>
+
+    <div>
+      <div class="upload-area" id="uploadArea">
+        <input type="file" id="fileInput" accept=".pdf" multiple>
+        <span class="upload-icon">📄</span>
+        <div class="upload-title">Drop PDFs here</div>
+        <div class="upload-hint">or click to browse</div>
+      </div>
+    </div>
+
+    <div class="proc-list" id="procList"></div>
+
+    <div class="sidebar-footer">
+      <div class="key-badge" id="keyBadge" style="display:none">
+        <span>API Key saved ✓</span>
+        <button class="key-change" onclick="showKeyModal()">Change</button>
+      </div>
+      <button class="btn btn-teal" id="exportBtn" onclick="exportExcel()" disabled>
+        ↓ Export to Excel
+      </button>
+      <button class="btn btn-ghost" onclick="clearAll()">
+        Clear All Data
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+
+    <!-- Topbar -->
+    <div class="topbar">
+      <div class="search-wrap">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+        </svg>
+        <input type="text" class="search-input" id="searchBox" placeholder="Search scheme name…" oninput="filterTable()">
+      </div>
+      <select class="filter-select" id="amcFilter" onchange="filterTable()">
+        <option value="">All AMCs</option>
+      </select>
+      <select class="filter-select" id="categoryFilter" onchange="filterTable()">
+        <option value="">All Categories</option>
+      </select>
+      <span class="topbar-count" id="tableCount">0 schemes</span>
+    </div>
+
+    <!-- Compare bar -->
+    <div class="compare-bar hidden" id="compareBar">
+      <span><strong id="compareCount">0</strong> schemes selected for comparison</span>
+      <button class="btn-sm btn-sm-teal" id="compareBtn" onclick="showCompare()" disabled>Compare</button>
+      <button class="btn-sm btn-sm-ghost" onclick="clearCompare()">Clear</button>
+    </div>
+
+    <!-- Table -->
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th></th>
+            <th onclick="sortTable('schemeName')">Scheme Name ↕</th>
+            <th onclick="sortTable('amcName')">AMC ↕</th>
+            <th onclick="sortTable('category')">Category ↕</th>
+            <th onclick="sortTable('brokerageRate')">Trail Yr 1–3 ↕</th>
+            <th onclick="sortTable('brokerageRate2')">Trail Yr 4+ ↕</th>
+            <th onclick="sortTable('effectiveDate')">Effective Date ↕</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody">
+          <tr>
+            <td colspan="7">
+              <div class="empty-state">
+                <div class="empty-icon">📂</div>
+                <div class="empty-title">No data yet</div>
+                <div class="empty-sub">Upload AMC PDF files from the sidebar to get started</div>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </main>
+</div>
+
+<!-- Compare Modal -->
+<div class="modal-overlay hidden" id="compareModal" onclick="closeCompare(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-head">
+      <div class="modal-title">Brokerage Comparison</div>
+      <button class="modal-close" onclick="closeCompare()">✕</button>
+    </div>
+    <div class="modal-body" id="compareGrid"></div>
+  </div>
+</div>
+
+<!-- API Key Modal -->
+<div class="apikey-overlay" id="apikeyModal">
+  <div class="apikey-box">
+    <div class="apikey-title">Enter your API Key</div>
+    <div class="apikey-sub">Your Anthropic API key is needed to extract brokerage data from PDFs. It is saved only in your browser — never uploaded anywhere.</div>
+    <input type="password" class="apikey-input" id="apikeyInput" placeholder="sk-ant-api03-..." />
+    <div class="apikey-err" id="apikeyErr">Please enter a valid API key (starts with sk-ant-)</div>
+    <div class="apikey-note">
+      Get your key from <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a> → API Keys
+    </div>
+    <button class="btn btn-teal" style="width:100%" onclick="saveApiKey()">Save & Continue</button>
+  </div>
+</div>
+
+<script>
+// ── CONFIG ──
+let API_KEY = localStorage.getItem('amc_api_key') || '';
+
+// ── State ──
+let allData = [];
+let selectedForCompare = new Set();
+let sortDir = {};
+
+pdfjsLib.GlobalWorkerOptions.workerSrc =
+  'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+// ── API Key Modal ──
+function showKeyModal() {
+  document.getElementById('apikeyModal').classList.remove('hidden');
+  document.getElementById('apikeyInput').value = '';
+  document.getElementById('apikeyErr').style.display = 'none';
+}
+
+function saveApiKey() {
+  const val = document.getElementById('apikeyInput').value.trim();
+  if (!val.startsWith('sk-ant-')) {
+    document.getElementById('apikeyErr').style.display = 'block';
+    return;
+  }
+  API_KEY = val;
+  localStorage.setItem('amc_api_key', val);
+  document.getElementById('apikeyModal').classList.add('hidden');
+  document.getElementById('keyBadge').style.display = 'flex';
+  notify('API key saved in browser ✓');
+}
+
+// Allow Enter key to submit
+document.getElementById('apikeyInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') saveApiKey();
+});
+
+// On load — check if key exists
+if (API_KEY) {
+  document.getElementById('apikeyModal').classList.add('hidden');
+  document.getElementById('keyBadge').style.display = 'flex';
+} else {
+  document.getElementById('apikeyModal').classList.remove('hidden');
+}
+
+// ── Upload wiring ──
+const uploadArea = document.getElementById('uploadArea');
+const fileInput  = document.getElementById('fileInput');
+
+uploadArea.addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', e => handleFiles([...e.target.files]));
+
+uploadArea.addEventListener('dragover', e => { e.preventDefault(); uploadArea.classList.add('over'); });
+uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('over'));
+uploadArea.addEventListener('drop', e => {
+  e.preventDefault();
+  uploadArea.classList.remove('over');
+  handleFiles([...e.dataTransfer.files].filter(f => f.type === 'application/pdf'));
+});
+
+// ── File handling ──
+function handleFiles(files) {
+  files.forEach(f => processPDF(f));
+}
+
+async function processPDF(file) {
+  const id = Math.random().toString(36).substr(2, 6);
+  addProcItem(id, file.name);
+
+  try {
+    const buf = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+    let text = '';
+    for (let i = 1; i <= Math.min(pdf.numPages, 30); i++) {
+      const page = await pdf.getPage(i);
+      const content = await page.getTextContent();
+      text += content.items.map(s => s.str).join(' ') + '\n';
+    }
+
+    const amcGuess = file.name.replace(/[_-]/g, ' ').replace(/\.pdf$/i, '');
+    const schemes = await extractWithClaude(text, amcGuess, file.name);
+
+    if (!schemes.length) throw new Error('No schemes found');
+
+    allData = allData.concat(schemes);
+    updateProcItem(id, 'done', schemes.length);
+    updateStats();
+    filterTable();
+    document.getElementById('exportBtn').disabled = false;
+    notify(`✓ ${schemes.length} schemes from ${file.name}`);
+
+  } catch (err) {
+    updateProcItem(id, 'fail', 0, err.message);
+  }
+}
+
+// ── Processing list ──
+function addProcItem(id, name) {
+  const el = document.createElement('div');
+  el.className = 'proc-item';
+  el.id = 'proc-' + id;
+  el.innerHTML = `
+    <div class="spin"></div>
+    <span class="proc-name">${name}</span>
+    <span class="proc-badge running">Reading</span>
+  `;
+  document.getElementById('procList').prepend(el);
+}
+
+function updateProcItem(id, status, count, errMsg) {
+  const el = document.getElementById('proc-' + id);
+  if (!el) return;
+  const badge = el.querySelector('.proc-badge');
+  const spin  = el.querySelector('.spin');
+  if (spin) spin.remove();
+
+  if (status === 'done') {
+    badge.className = 'proc-badge done';
+    badge.textContent = count + ' schemes';
+  } else {
+    badge.className = 'proc-badge fail';
+    badge.textContent = 'Failed';
+    el.title = errMsg || '';
+  }
+}
+
+// ── Claude extraction ──
+async function extractWithClaude(pdfText, amcGuess, fileName) {
+  const prompt = `You are a financial data extraction specialist for Indian Mutual Fund brokerage documents.
+
+Extract ALL scheme brokerage data from this AMC PDF. The AMC hint is "${amcGuess}".
+
+Rules:
+1. Use "Trail Year 1" (or "1st Year Trail") as brokerageRate
+2. Use "Trail Year 4 Onwards" (or "4th Year Onwards") as brokerageRate2
+3. Assign each scheme its category: Equity, Hybrid, Debt, Liquid, Index, ETF, Fund of Fund, Gilt, Arbitrage, etc.
+4. Store brokerage % as a number string without % sign (e.g. "1.05")
+5. Include EVERY scheme listed
+6. Infer the full AMC name from the document
+
+Return ONLY a valid JSON array, no markdown, no explanation:
+[{"schemeName":"...","amcName":"...","category":"...","brokerageRate":"0.85","brokerageRate2":"0.85","effectiveDate":"Jan 2026"}]
+
+PDF Content:
+${pdfText.substring(0, 14000)}`;
+
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': API_KEY,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 8000,
+      messages: [{ role: 'user', content: prompt }]
+    })
+  });
+
+  const data = await response.json();
+  const text = data.content?.map(c => c.text || '').join('') || '[]';
+  const clean = text.replace(/```json|```/g, '').trim();
+  const s = clean.indexOf('['), e = clean.lastIndexOf(']');
+  if (s === -1 || e === -1) return [];
+
+  return JSON.parse(clean.substring(s, e + 1)).map(item => ({
+    ...item,
+    id: Math.random().toString(36).substr(2, 9),
+    sourceFile: fileName,
+    brokerageRate: parseFloat(item.brokerageRate) || 0,
+    brokerageRate2: parseFloat(item.brokerageRate2) || 0
+  }));
+}
+
+// ── Table ──
+function filterTable() {
+  const q   = document.getElementById('searchBox').value.toLowerCase();
+  const amc = document.getElementById('amcFilter').value;
+  const cat = document.getElementById('categoryFilter').value;
+
+  const filtered = allData.filter(r =>
+    (!q   || r.schemeName?.toLowerCase().includes(q)) &&
+    (!amc || r.amcName === amc) &&
+    (!cat || r.category === cat)
+  );
+
+  renderTable(filtered);
+  document.getElementById('tableCount').textContent =
+    filtered.length === allData.length
+      ? `${allData.length} schemes`
+      : `${filtered.length} of ${allData.length} schemes`;
+}
+
+function catClass(cat) {
+  if (!cat) return '';
+  const c = cat.toLowerCase();
+  if (c.includes('equity')) return 'equity';
+  if (c.includes('debt'))   return 'debt';
+  if (c.includes('hybrid')) return 'hybrid';
+  if (c.includes('liquid')) return 'liquid';
+  return '';
+}
+
+function renderTable(data) {
+  const tbody = document.getElementById('tableBody');
+  if (!data.length) {
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state">
+      <div class="empty-icon">${allData.length ? '🔍' : '📂'}</div>
+      <div class="empty-title">${allData.length ? 'No matching schemes' : 'No data yet'}</div>
+      <div class="empty-sub">${allData.length ? 'Try adjusting your filters' : 'Upload AMC PDF files from the sidebar'}</div>
+    </div></td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = data.map(row => `
+    <tr>
+      <td>
+        <input type="checkbox" ${selectedForCompare.has(row.id) ? 'checked' : ''}
+          onchange="toggleCompare('${row.id}')"
+          style="accent-color:var(--teal);width:15px;height:15px;cursor:pointer;">
+      </td>
+      <td class="td-scheme">${row.schemeName || '—'}</td>
+      <td><span class="tag tag-amc">${row.amcName || '—'}</span></td>
+      <td><span class="tag tag-cat ${catClass(row.category)}">${row.category || 'Other'}</span></td>
+      <td><span class="rate-val">${row.brokerageRate > 0 ? row.brokerageRate.toFixed(2) + '%' : '<span class="dash">—</span>'}</span></td>
+      <td><span class="rate-val secondary">${row.brokerageRate2 > 0 ? row.brokerageRate2.toFixed(2) + '%' : '<span class="dash">—</span>'}</span></td>
+      <td class="date-val">${row.effectiveDate || '—'}</td>
+    </tr>
+  `).join('');
+}
+
+function sortTable(col) {
+  sortDir[col] = !sortDir[col];
+  allData.sort((a, b) => {
+    const va = a[col] ?? '', vb = b[col] ?? '';
+    if (typeof va === 'number') return sortDir[col] ? va - vb : vb - va;
+    return sortDir[col] ? String(va).localeCompare(String(vb)) : String(vb).localeCompare(String(va));
+  });
+  filterTable();
+}
+
+// ── Stats & filters ──
+function updateStats() {
+  document.getElementById('statSchemes').textContent = allData.length;
+
+  const amcs = new Set(allData.map(d => d.amcName).filter(Boolean));
+  document.getElementById('statAMCs').textContent = amcs.size;
+
+  const rates = allData.map(d => d.brokerageRate).filter(r => r > 0);
+  document.getElementById('statAvg').textContent =
+    rates.length ? (rates.reduce((a,b) => a+b,0)/rates.length).toFixed(2)+'%' : '—';
+
+  const pdfs = new Set(allData.map(d => d.sourceFile));
+  document.getElementById('statPDFs').textContent = pdfs.size;
+
+  const amcFilter = document.getElementById('amcFilter');
+  const curAMC = amcFilter.value;
+  amcFilter.innerHTML = '<option value="">All AMCs</option>' +
+    [...amcs].sort().map(a => `<option value="${a}" ${a===curAMC?'selected':''}>${a}</option>`).join('');
+
+  const cats = new Set(allData.map(d => d.category).filter(Boolean));
+  const catFilter = document.getElementById('categoryFilter');
+  const curCat = catFilter.value;
+  catFilter.innerHTML = '<option value="">All Categories</option>' +
+    [...cats].sort().map(c => `<option value="${c}" ${c===curCat?'selected':''}>${c}</option>`).join('');
+}
+
+// ── Compare ──
+function toggleCompare(id) {
+  selectedForCompare.has(id) ? selectedForCompare.delete(id) : selectedForCompare.add(id);
+  const n = selectedForCompare.size;
+  document.getElementById('compareCount').textContent = n;
+  document.getElementById('compareBar').classList.toggle('hidden', n < 2);
+  document.getElementById('compareBtn').disabled = n < 2;
+}
+
+function clearCompare() {
+  selectedForCompare.clear();
+  document.getElementById('compareBar').classList.add('hidden');
+  document.getElementById('compareBtn').disabled = true;
+  filterTable();
+}
+
+function showCompare() {
+  const items = allData.filter(d => selectedForCompare.has(d.id))
+    .sort((a,b) => b.brokerageRate - a.brokerageRate);
+  if (items.length < 2) return;
+
+  const maxRate = items[0].brokerageRate;
+  document.getElementById('compareGrid').innerHTML = items.map((item, i) => `
+    <div class="compare-item ${item.brokerageRate === maxRate && i===0 ? 'top' : ''}">
+      <div>
+        <div class="ci-name">${item.schemeName}</div>
+        <div class="ci-meta">${item.amcName} · <span class="tag tag-cat ${catClass(item.category)}" style="font-size:10px;padding:1px 7px">${item.category}</span></div>
+      </div>
+      <div style="font-size:12px;color:var(--ink3)">${item.effectiveDate || '—'}</div>
+      <div class="ci-rate">${item.brokerageRate.toFixed(2)}<span>%</span></div>
+      ${i === 0 ? '<div style="font-size:11px;font-weight:600;color:var(--teal)">Highest</div>' : '<div></div>'}
+    </div>
+  `).join('');
+
+  document.getElementById('compareModal').classList.remove('hidden');
+}
+
+function closeCompare(e) {
+  if (!e || e.target === document.getElementById('compareModal')) {
+    document.getElementById('compareModal').classList.add('hidden');
+  }
+}
+
+// ── Export ──
+function exportExcel() {
+  if (!allData.length) return;
+  const q   = document.getElementById('searchBox').value.toLowerCase();
+  const amc = document.getElementById('amcFilter').value;
+  const cat = document.getElementById('categoryFilter').value;
+
+  const rows = allData.filter(r =>
+    (!q   || r.schemeName?.toLowerCase().includes(q)) &&
+    (!amc || r.amcName === amc) &&
+    (!cat || r.category === cat)
+  ).map(r => ({
+    'Scheme Name':    r.schemeName,
+    'AMC':            r.amcName,
+    'Category':       r.category,
+    'Trail Yr 1–3 %': r.brokerageRate,
+    'Trail Yr 4+ %':  r.brokerageRate2 || '',
+    'Effective Date': r.effectiveDate || '',
+    'Source File':    r.sourceFile
+  }));
+
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Brokerage');
+  XLSX.writeFile(wb, `AMC_Brokerage_${new Date().toISOString().split('T')[0]}.xlsx`);
+  notify('Excel exported successfully');
+}
+
+// ── Clear ──
+function clearAll() {
+  if (!allData.length) return;
+  if (!confirm('Clear all extracted data?')) return;
+  allData = [];
+  selectedForCompare.clear();
+  document.getElementById('procList').innerHTML = '';
+  document.getElementById('compareBar').classList.add('hidden');
+  document.getElementById('compareBtn').disabled = true;
+  document.getElementById('exportBtn').disabled = true;
+  updateStats();
+  filterTable();
+}
+
+// ── Notify ──
+function notify(msg) {
+  const n = document.createElement('div');
+  n.className = 'notif';
+  n.textContent = msg;
+  document.body.appendChild(n);
+  setTimeout(() => n.remove(), 3200);
+}
+</script>
+</body>
+</html>
